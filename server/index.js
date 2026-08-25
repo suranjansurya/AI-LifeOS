@@ -204,8 +204,8 @@ const server = http.createServer(async (req, res) => {
 
   // POST /api/ai/plan-day — Daily Schedule Planner
   if (req.method === 'POST' && url === '/api/ai/plan-day') {
-    const { tasks = [], availableHours = 4, startHour = 9 } = await parseBody();
-    const result = generateSmartDailySchedule(tasks, availableHours, startHour);
+    const { tasks = [], availableHours = 4, startHour = 9, calendarEvents = [], preferences = {}, userMemory = [] } = await parseBody();
+    const result = generateSmartDailySchedule(tasks, availableHours, startHour, calendarEvents, preferences, userMemory);
     return sendJSON(200, { success: true, ...result });
   }
 
@@ -234,7 +234,7 @@ const server = http.createServer(async (req, res) => {
 
     try {
       const contextPrompt = buildCompactContextPrompt(context);
-      const systemPrompt = `You are AI LifeOS Copilot.\n${contextPrompt}\nProvide concise, actionable advice.`;
+      const systemPrompt = `You are AI LifeOS Copilot.\n${contextPrompt}\nProvide concise, actionable advice. If user asks to plan their day or schedule tasks, explain the recommended order and tell them they can also click 'Plan My Day' on the dashboard.`;
       const rawResponse = await callGeminiAPI(systemPrompt, message, false);
 
       return sendJSON(200, {
@@ -280,9 +280,9 @@ const server = http.createServer(async (req, res) => {
         success: false,
         fallbackMode: true,
         subtasks: [
-          { title: `Define requirements for ${taskTitle}`, estimatedMinutes: 20, priority: 'High' },
-          { title: `Core implementation step for ${taskTitle}`, estimatedMinutes: 45, priority: 'High' },
-          { title: `Verification & testing phase`, estimatedMinutes: 25, priority: 'Medium' }
+          { title: `Define requirements for ${taskTitle}`, description: 'Brainstorm core objectives & deliverables', estimatedMinutes: 20, priority: 'High' },
+          { title: `Core implementation step for ${taskTitle}`, description: 'Build foundational modules & backend logic', estimatedMinutes: 45, priority: 'High' },
+          { title: `Verification & testing phase`, description: 'Execute unit tests and manual verification', estimatedMinutes: 25, priority: 'Medium' }
         ]
       });
     }
@@ -297,9 +297,9 @@ const server = http.createServer(async (req, res) => {
         success: false,
         fallbackMode: true,
         subtasks: [
-          { title: `Define requirements for ${taskTitle}`, estimatedMinutes: 20, priority: 'High' },
-          { title: `Implementation phase for ${taskTitle}`, estimatedMinutes: 45, priority: 'High' },
-          { title: `Testing & verification`, estimatedMinutes: 25, priority: 'Medium' }
+          { title: `Define requirements for ${taskTitle}`, description: 'Brainstorm core objectives & deliverables', estimatedMinutes: 20, priority: 'High' },
+          { title: `Implementation phase for ${taskTitle}`, description: 'Build foundational modules & backend logic', estimatedMinutes: 45, priority: 'High' },
+          { title: `Testing & verification`, description: 'Execute unit tests and manual verification', estimatedMinutes: 25, priority: 'Medium' }
         ]
       });
     }

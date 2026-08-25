@@ -1,106 +1,86 @@
 import React from 'react';
-import { Clock, CheckCircle, Play, Circle, RefreshCw } from 'lucide-react';
+import { Clock, CheckCircle, Play, Circle, ArrowRight, Sliders, Calendar } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../common/Button';
+import { useNavigate } from 'react-router-dom';
 
 export const TodayPlan = () => {
-  const { plan, rebuildScheduleAi } = useApp();
+  const navigate = useNavigate();
+  const { dailyPlan, plan } = useApp();
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />;
-      case 'current':
-        return <Play className="w-4 h-4 text-indigo-400 shrink-0 fill-indigo-400 animate-pulse" />;
-      default:
-        return <Circle className="w-4 h-4 text-zinc-600 shrink-0" />;
-    }
-  };
+  const activePlanSlots = Array.isArray(dailyPlan?.schedule)
+    ? dailyPlan.schedule
+    : (Array.isArray(plan) ? plan : []);
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'completed':
-        return (
-          <span className="px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 rounded border border-emerald-500/20">
-            Completed
-          </span>
-        );
-      case 'current':
-        return (
-          <span className="px-2 py-0.5 text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 rounded border border-indigo-500/40 animate-pulse">
-            In Progress
-          </span>
-        );
-      default:
-        return (
-          <span className="px-2 py-0.5 text-[10px] font-medium bg-zinc-800 text-zinc-400 rounded border border-zinc-700">
-            Upcoming
-          </span>
-        );
-    }
-  };
+  const taskSlots = activePlanSlots.filter(s => s && typeof s === 'object' && (s.type === 'task' || s.title));
+  const completedCount = taskSlots.filter(s => s.status === 'completed' || s.status === 'Completed').length;
+  const progressPercent = taskSlots.length > 0 ? Math.round((completedCount / taskSlots.length) * 100) : 0;
+
+  const currentSlot = taskSlots.find(s => s.status === 'scheduled' || s.status === 'current') || taskSlots[0];
+  const nextSlot = taskSlots.find(s => s.id !== currentSlot?.id && s.status !== 'completed');
 
   return (
-    <div className="card-panel p-5">
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-zinc-800/80">
+    <div className="card-panel p-5 space-y-4 border-indigo-500/30">
+      <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
         <div>
-          <h3 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-indigo-400" />
-            Today's AI Schedule Plan
+          <h3 className="text-sm font-bold text-zinc-100 flex items-center gap-2">
+            <Sliders className="w-4 h-4 text-indigo-400" />
+            AI DAILY PLAN
           </h3>
-          <p className="text-xs text-zinc-400 mt-0.5">Adaptive schedule aligned with your peak focus hours</p>
+          <p className="text-xs text-zinc-400 mt-0.5">Real-time schedule aligned with your peak focus hours</p>
         </div>
 
         <Button
-          variant="outline"
+          variant="ai"
           size="sm"
-          onClick={rebuildScheduleAi}
-          icon={RefreshCw}
+          onClick={() => navigate('/planner')}
+          icon={ArrowRight}
         >
-          Re-balance
+          Open Full Plan
         </Button>
       </div>
 
-      <div className="space-y-3 relative before:absolute before:left-[19px] before:top-3 before:bottom-3 before:w-0.5 before:bg-zinc-800">
-        {(plan || []).map((item) => {
-          const isCurrent = item.status === 'current';
-          const isCompleted = item.status === 'completed';
+      {/* Today's Progress Bar */}
+      <div className="space-y-1.5">
+        <div className="flex justify-between text-xs font-semibold">
+          <span className="text-zinc-400">Today's Plan Progress</span>
+          <span className="text-indigo-400 font-mono font-bold">{progressPercent}%</span>
+        </div>
+        <div className="w-full h-2 rounded-full bg-zinc-800 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      </div>
 
-          return (
-            <div
-              key={item.id}
-              className={`relative flex items-center justify-between p-3 rounded-xl border transition-all ${
-                isCurrent
-                  ? 'bg-indigo-950/30 border-indigo-500/40 shadow-sm shadow-indigo-500/10'
-                  : isCompleted
-                  ? 'bg-zinc-900/30 border-zinc-800/50 opacity-70'
-                  : 'bg-zinc-900/60 border-zinc-800/80 hover:border-zinc-700'
-              }`}
-            >
-              <div className="flex items-center gap-3.5 z-10">
-                <div className="w-9 h-9 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0">
-                  {getStatusIcon(item.status)}
-                </div>
+      {/* Highlights: Current & Next */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+        {/* Current */}
+        <div className="p-3 rounded-xl bg-indigo-950/30 border border-indigo-500/30 space-y-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 block">
+            CURRENT TASK
+          </span>
+          <h4 className="text-xs font-bold text-zinc-100 truncate">
+            {currentSlot ? currentSlot.title : 'No active task scheduled'}
+          </h4>
+          <span className="text-[10px] text-zinc-400 font-mono block">
+            {currentSlot ? (currentSlot.timeWindow || currentSlot.time || '35 mins') : 'Ready'}
+          </span>
+        </div>
 
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-semibold text-zinc-400">
-                      {item.time}
-                    </span>
-                    <span className="text-xs font-semibold text-zinc-200">
-                      {item.title}
-                    </span>
-                  </div>
-                  <span className="text-[11px] text-zinc-500 font-mono">
-                    {item.duration} · {item.category}
-                  </span>
-                </div>
-              </div>
-
-              <div>{getStatusBadge(item.status)}</div>
-            </div>
-          );
-        })}
+        {/* Next */}
+        <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">
+            UPCOMING NEXT
+          </span>
+          <h4 className="text-xs font-bold text-zinc-200 truncate">
+            {nextSlot ? nextSlot.title : 'End of daily schedule'}
+          </h4>
+          <span className="text-[10px] text-zinc-500 font-mono block">
+            {nextSlot ? (nextSlot.timeWindow || nextSlot.time || 'Next block') : 'Complete'}
+          </span>
+        </div>
       </div>
     </div>
   );

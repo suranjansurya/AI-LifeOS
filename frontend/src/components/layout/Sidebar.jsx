@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Home,
   Bot,
+  Sliders,
   CheckSquare,
   Target,
   Calendar as CalendarIcon,
@@ -11,7 +12,6 @@ import {
   FileText,
   Bell,
   Settings,
-  User,
   ChevronLeft,
   ChevronRight,
   Sparkles
@@ -28,6 +28,7 @@ export const Sidebar = ({ onOpenNotifications }) => {
   const navItems = [
     { name: 'Home', path: '/', icon: Home },
     { name: 'AI Assistant', path: '/ai', icon: Bot, badge: 'AI' },
+    { name: 'Daily Planner', path: '/planner', icon: Sliders, badge: 'NEW' },
     { name: 'Tasks', path: '/tasks', icon: CheckSquare },
     { name: 'Goals', path: '/goals', icon: Target },
     { name: 'Calendar', path: '/calendar', icon: CalendarIcon },

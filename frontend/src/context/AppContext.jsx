@@ -18,6 +18,8 @@ export const AppProvider = ({ children }) => {
   const [notifications, setNotificationsState] = useState(() => storageService.getNotifications());
   const [chatMessages, setChatMessagesState] = useState(() => storageService.getChatHistory());
   const [memories, setMemoriesState] = useState(() => aiMemoryService.getMemories());
+  const [calendarEvents, setCalendarEventsState] = useState(() => storageService.getCalendarEvents());
+  const [dailyPlan, setDailyPlanState] = useState(() => storageService.getDailyPlan());
 
   // AI & Server Status
   const [aiStatus, setAiStatus] = useState({ configured: false, provider: 'local-fallback', message: 'Checking AI Status...' });
@@ -124,6 +126,11 @@ export const AppProvider = ({ children }) => {
   const setProfile = (newProfile) => {
     setProfileState(newProfile);
     storageService.saveProfile(newProfile);
+  };
+
+  const saveDailyPlan = (planData) => {
+    setDailyPlanState(planData);
+    storageService.saveDailyPlan(planData);
   };
 
   // Memory Actions
@@ -359,6 +366,8 @@ export const AppProvider = ({ children }) => {
       tasks, setTasks, addTask, updateTask, toggleTaskComplete, deleteTask,
       nextBestAction,
       stats,
+      calendarEvents,
+      dailyPlan, saveDailyPlan,
       plan: initialPlan,
       aiInsight: initialAiInsight,
       upcoming: initialUpcoming,

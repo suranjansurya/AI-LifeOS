@@ -12,6 +12,7 @@ import { Profile } from './pages/auth/Profile';
 
 import { Home } from './pages/Home';
 import { AiAssistant } from './pages/AiAssistant';
+import { Planner } from './pages/Planner';
 import { Tasks } from './pages/Tasks';
 import { Goals } from './pages/Goals';
 import { Calendar } from './pages/Calendar';
@@ -36,6 +37,7 @@ export function App() {
               <Route path="/" element={<AppShell />}>
                 <Route index element={<Home />} />
                 <Route path="ai" element={<AiAssistant />} />
+                <Route path="planner" element={<Planner />} />
                 <Route path="tasks" element={<Tasks />} />
                 <Route path="goals" element={<Goals />} />
                 <Route path="calendar" element={<Calendar />} />

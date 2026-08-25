@@ -15,7 +15,9 @@ const KEYS = {
   FOCUS_SESSIONS: 'ai_lifeos_focus_v2',
   NOTIFICATIONS: 'ai_lifeos_notifications_v2',
   PROFILE: 'ai_lifeos_profile_v2',
-  CHAT: 'ai_lifeos_chat_v2'
+  CHAT: 'ai_lifeos_chat_v2',
+  DAILY_PLAN: 'ai_lifeos_daily_plan_v2',
+  CALENDAR_EVENTS: 'ai_lifeos_calendar_v2'
 };
 
 // Safe JSON parser helper to prevent app crash on corrupted localStorage
@@ -76,6 +78,14 @@ export const storageService = {
   // Chat Messages
   getChatHistory: () => safeGet(KEYS.CHAT, initialChatMessages),
   saveChatHistory: (messages) => safeSet(KEYS.CHAT, messages),
+
+  // Daily Plan
+  getDailyPlan: () => safeGet(KEYS.DAILY_PLAN, null),
+  saveDailyPlan: (plan) => safeSet(KEYS.DAILY_PLAN, plan),
+
+  // Calendar Events
+  getCalendarEvents: () => safeGet(KEYS.CALENDAR_EVENTS, []),
+  saveCalendarEvents: (events) => safeSet(KEYS.CALENDAR_EVENTS, events),
 
   // Reset Storage
   clearAll: () => {

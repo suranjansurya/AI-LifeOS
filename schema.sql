@@ -129,12 +129,27 @@ CREATE TABLE IF NOT EXISTS public.user_preferences (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 11. DAILY PLANS TABLE
+CREATE TABLE IF NOT EXISTS public.daily_plans (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  plan_date TEXT NOT NULL,
+  total_available_hours NUMERIC DEFAULT 4,
+  scheduled_tasks_count INT DEFAULT 0,
+  schedule JSONB DEFAULT '[]'::jsonb,
+  why_this_plan JSONB DEFAULT '[]'::jsonb,
+  accepted BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- INDEXES FOR PERFORMANCE
 CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON public.tasks(user_id);
 CREATE INDEX IF NOT EXISTS idx_goals_user_id ON public.goals(user_id);
 CREATE INDEX IF NOT EXISTS idx_notes_user_id ON public.notes(user_id);
 CREATE INDEX IF NOT EXISTS idx_focus_user_id ON public.focus_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_ai_messages_user_id ON public.ai_messages(user_id);
+CREATE INDEX IF NOT EXISTS idx_daily_plans_user_id ON public.daily_plans(user_id);
 
 -- ====================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES — DATA ISOLATION GUARANTEE
@@ -150,40 +165,25 @@ ALTER TABLE public.ai_conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ai_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_preferences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.daily_plans ENABLE ROW LEVEL SECURITY;
 
--- PROFILES POLICIES
+-- POLICIES
 CREATE POLICY "Users can select own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
--- TASKS POLICIES
 CREATE POLICY "Users can manage own tasks" ON public.tasks FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-
--- GOALS POLICIES
 CREATE POLICY "Users can manage own goals" ON public.goals FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-
--- NOTES POLICIES
 CREATE POLICY "Users can manage own notes" ON public.notes FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-
--- CALENDAR EVENTS POLICIES
 CREATE POLICY "Users can manage own calendar events" ON public.calendar_events FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-
--- FOCUS SESSIONS POLICIES
 CREATE POLICY "Users can manage own focus sessions" ON public.focus_sessions FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-
--- AI CONVERSATIONS POLICIES
 CREATE POLICY "Users can manage own ai conversations" ON public.ai_conversations FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-
--- AI MESSAGES POLICIES
 CREATE POLICY "Users can manage own ai messages" ON public.ai_messages FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-
--- NOTIFICATIONS POLICIES
 CREATE POLICY "Users can manage own notifications" ON public.notifications FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-
--- USER PREFERENCES POLICIES
 CREATE POLICY "Users can manage own preferences" ON public.user_preferences FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can manage own daily plans" ON public.daily_plans FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- AUTOMATIC PROFILE & PREFERENCES CREATION TRIGGER ON SIGNUP
+-- TRIGGER ON SIGNUP
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN

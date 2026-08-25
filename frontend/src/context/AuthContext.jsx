@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
-import { storageService } from '../services/storageService';
 
 const AuthContext = createContext(null);
+
+const USERS_STORAGE_KEY = 'ailifeos_registered_users';
+const SESSION_STORAGE_KEY = 'ailifeos_user_session';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -10,73 +12,155 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) {
-      // Fallback mock session for local environment
-      const localProfile = storageService.getProfile();
-      setUser({
-        id: 'local-user-id',
-        email: localProfile.email || 'user@ailifeos.internal',
-        user_metadata: { name: localProfile.name || 'Suranjan' }
-      });
-      setLoading(false);
-      return;
-    }
+    const initSession = async () => {
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            setSession(session);
+            setUser(session.user);
+          }
+        } catch (err) {
+          console.error('[AuthContext] Supabase session fetch error:', err);
+        }
 
-    // Get initial session from Supabase
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+        });
 
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+        setLoading(false);
+        return () => subscription.unsubscribe();
+      } else {
+        // Local session storage check
+        try {
+          const rawSession = localStorage.getItem(SESSION_STORAGE_KEY);
+          if (rawSession) {
+            const parsedSession = JSON.parse(rawSession);
+            if (parsedSession && parsedSession.user) {
+              setSession(parsedSession);
+              setUser(parsedSession.user);
+            }
+          }
+        } catch (e) {
+          console.error('[AuthContext] Error parsing local session:', e);
+        }
+        setLoading(false);
+      }
+    };
 
-    return () => subscription.unsubscribe();
+    initSession();
   }, []);
 
   const signUp = async (email, password, name) => {
-    if (!isSupabaseConfigured || !supabase) {
-      setUser({ id: 'local-user-id', email, user_metadata: { name } });
-      return { data: { user: { id: 'local-user-id', email } }, error: null };
-    }
-    const res = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { name }
+    if (isSupabaseConfigured && supabase) {
+      const res = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name }
+        }
+      });
+
+      if (!res.error && res.data?.user) {
+        setUser(res.data.user);
+        setSession(res.data.session || { user: res.data.user });
       }
-    });
-    return res;
+      return res;
+    }
+
+    // Local authentication signup logic
+    const rawUsers = localStorage.getItem(USERS_STORAGE_KEY);
+    const users = rawUsers ? JSON.parse(rawUsers) : [];
+
+    const existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (existingUser) {
+      return { data: null, error: { message: 'An account with this email already exists.' } };
+    }
+
+    const newUser = {
+      id: 'usr_' + Date.now(),
+      email: email.trim(),
+      password, // Local fallback security scope
+      name: name.trim()
+    };
+
+    users.push(newUser);
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+
+    const newSession = {
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        user_metadata: { name: newUser.name }
+      }
+    };
+
+    setUser(newSession.user);
+    setSession(newSession);
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(newSession));
+
+    return { data: newSession, error: null };
   };
 
   const signIn = async (email, password) => {
-    if (!isSupabaseConfigured || !supabase) {
-      setUser({ id: 'local-user-id', email });
-      return { data: { session: {} }, error: null };
+    if (isSupabaseConfigured && supabase) {
+      const res = await supabase.auth.signInWithPassword({ email, password });
+      if (!res.error && res.data?.user) {
+        setUser(res.data.user);
+        setSession(res.data.session);
+      }
+      return res;
     }
-    return await supabase.auth.signInWithPassword({ email, password });
+
+    // Local authentication signin logic
+    const rawUsers = localStorage.getItem(USERS_STORAGE_KEY);
+    const users = rawUsers ? JSON.parse(rawUsers) : [];
+
+    const foundUser = users.find(
+      u => u.email.toLowerCase() === email.trim().toLowerCase() && u.password === password
+    );
+
+    if (!foundUser) {
+      return { data: null, error: { message: 'Invalid email or password. Please try again.' } };
+    }
+
+    const newSession = {
+      user: {
+        id: foundUser.id,
+        email: foundUser.email,
+        user_metadata: { name: foundUser.name }
+      }
+    };
+
+    setUser(newSession.user);
+    setSession(newSession);
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(newSession));
+
+    return { data: newSession, error: null };
   };
 
   const signOut = async () => {
     if (isSupabaseConfigured && supabase) {
-      await supabase.auth.signOut();
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.error('[AuthContext] Supabase signOut error:', err);
+      }
     }
     setUser(null);
     setSession(null);
+    localStorage.removeItem(SESSION_STORAGE_KEY);
   };
 
   const resetPassword = async (email) => {
-    if (!isSupabaseConfigured || !supabase) {
-      return { data: {}, error: null };
+    if (isSupabaseConfigured && supabase) {
+      return await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
     }
-    return await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`
-    });
+    return { data: {}, error: null };
   };
 
   return (
