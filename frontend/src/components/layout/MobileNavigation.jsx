@@ -11,10 +11,11 @@ import {
   BarChart3,
   FileText,
   Settings,
+  Sparkles,
   X
 } from 'lucide-react';
 
-export const MobileNavigation = () => {
+export const MobileNavigation = ({ onOpenCommandCenter }) => {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   const primaryNav = [
@@ -47,6 +48,18 @@ export const MobileNavigation = () => {
                 <X className="w-4 h-4" />
               </button>
             </div>
+
+            <button
+              onClick={() => {
+                setShowMoreMenu(false);
+                if (onOpenCommandCenter) onOpenCommandCenter();
+              }}
+              className="w-full flex items-center gap-3 p-3 rounded-xl bg-indigo-950/60 border border-indigo-500/40 text-indigo-300 font-bold text-xs text-left"
+            >
+              <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
+              <span>AI Command Center</span>
+            </button>
+
             <div className="grid grid-cols-2 gap-2">
               {secondaryNav.map((item) => {
                 const Icon = item.icon;

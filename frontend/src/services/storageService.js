@@ -17,7 +17,8 @@ const KEYS = {
   PROFILE: 'ai_lifeos_profile_v2',
   CHAT: 'ai_lifeos_chat_v2',
   DAILY_PLAN: 'ai_lifeos_daily_plan_v2',
-  CALENDAR_EVENTS: 'ai_lifeos_calendar_v2'
+  CALENDAR_EVENTS: 'ai_lifeos_calendar_v2',
+  ACTION_HISTORY: 'ai_lifeos_action_history_v2'
 };
 
 // Safe JSON parser helper to prevent app crash on corrupted localStorage
@@ -86,6 +87,10 @@ export const storageService = {
   // Calendar Events
   getCalendarEvents: () => safeGet(KEYS.CALENDAR_EVENTS, []),
   saveCalendarEvents: (events) => safeSet(KEYS.CALENDAR_EVENTS, events),
+
+  // AI Action History
+  getAiActionHistory: () => safeGet(KEYS.ACTION_HISTORY, []),
+  saveAiActionHistory: (history) => safeSet(KEYS.ACTION_HISTORY, history),
 
   // Reset Storage
   clearAll: () => {

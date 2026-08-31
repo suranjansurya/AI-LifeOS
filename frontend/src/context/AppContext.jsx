@@ -20,6 +20,7 @@ export const AppProvider = ({ children }) => {
   const [memories, setMemoriesState] = useState(() => aiMemoryService.getMemories());
   const [calendarEvents, setCalendarEventsState] = useState(() => storageService.getCalendarEvents());
   const [dailyPlan, setDailyPlanState] = useState(() => storageService.getDailyPlan());
+  const [aiActionHistory, setAiActionHistoryState] = useState(() => storageService.getAiActionHistory());
 
   // AI & Server Status
   const [aiStatus, setAiStatus] = useState({ configured: false, provider: 'local-fallback', message: 'Checking AI Status...' });
@@ -131,6 +132,39 @@ export const AppProvider = ({ children }) => {
   const saveDailyPlan = (planData) => {
     setDailyPlanState(planData);
     storageService.saveDailyPlan(planData);
+  };
+
+  const setCalendarEvents = (events) => {
+    setCalendarEventsState(events);
+    storageService.saveCalendarEvents(events);
+  };
+
+  // AI Action History Logger
+  const logAiAction = (actionItem) => {
+    const newItem = {
+      id: `act-${Date.now()}`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      ...actionItem
+    };
+    const updated = [newItem, ...aiActionHistory];
+    setAiActionHistoryState(updated);
+    storageService.saveAiActionHistory(updated);
+  };
+
+  const undoAiAction = (actionItem) => {
+    if (!actionItem) return;
+
+    if (actionItem.type === 'CREATE_TASK' && actionItem.data?.id) {
+      setTasks(tasks.filter(t => t.id !== actionItem.data.id));
+    } else if (actionItem.type === 'DELETE_TASK' && actionItem.data) {
+      setTasks([actionItem.data, ...tasks]);
+    } else if (actionItem.type === 'CREATE_EVENT' && actionItem.data?.id) {
+      setCalendarEvents(calendarEvents.filter(e => e.id !== actionItem.data.id));
+    }
+
+    const updated = aiActionHistory.filter(a => a.id !== actionItem.id);
+    setAiActionHistoryState(updated);
+    storageService.saveAiActionHistory(updated);
   };
 
   // Memory Actions
@@ -366,8 +400,9 @@ export const AppProvider = ({ children }) => {
       tasks, setTasks, addTask, updateTask, toggleTaskComplete, deleteTask,
       nextBestAction,
       stats,
-      calendarEvents,
+      calendarEvents, setCalendarEvents,
       dailyPlan, saveDailyPlan,
+      aiActionHistory, logAiAction, undoAiAction,
       plan: initialPlan,
       aiInsight: initialAiInsight,
       upcoming: initialUpcoming,

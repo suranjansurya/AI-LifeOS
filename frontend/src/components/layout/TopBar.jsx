@@ -1,11 +1,11 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Plus, Bell, Sparkles } from 'lucide-react';
+import { Plus, Bell, Sparkles, Command } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../common/Button';
 
-export const TopBar = ({ onOpenQuickAdd, onOpenNotifications }) => {
+export const TopBar = ({ onOpenQuickAdd, onOpenNotifications, onOpenCommandCenter }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, notifications } = useApp();
@@ -15,11 +15,13 @@ export const TopBar = ({ onOpenQuickAdd, onOpenNotifications }) => {
   const routeTitles = {
     '/': 'Home Dashboard',
     '/ai': 'AI Copilot Assistant',
+    '/planner': 'AI Daily Planner & Smart Scheduler',
     '/tasks': 'Smart Tasks',
     '/goals': 'Goals & Milestones',
     '/calendar': 'AI Adaptive Calendar',
     '/focus': 'Focus Mode',
     '/insights': 'AI Insights & Analytics',
+    '/reports': 'AI Report Center',
     '/notes': 'Notes & Ideas',
     '/settings': 'Settings',
     '/profile': 'User Profile & Account'
@@ -47,6 +49,18 @@ export const TopBar = ({ onOpenQuickAdd, onOpenNotifications }) => {
 
       {/* Actions */}
       <div className="flex items-center gap-2.5">
+        {/* Command Center Trigger Button */}
+        <button
+          onClick={onOpenCommandCenter}
+          className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-950/50 hover:bg-indigo-900/60 border border-indigo-500/30 text-xs font-semibold text-indigo-300 transition-all cursor-pointer shadow-sm shadow-indigo-500/10"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+          <span>AI Command Center</span>
+          <span className="px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 font-mono text-[10px] text-zinc-400">
+            ⌘K
+          </span>
+        </button>
+
         <Button
           variant="ai"
           size="sm"
@@ -57,15 +71,18 @@ export const TopBar = ({ onOpenQuickAdd, onOpenNotifications }) => {
           <span className="sm:hidden">Add</span>
         </Button>
 
-        {/* Notifications Icon (Mobile) */}
+        {/* Notifications Icon (Desktop & Mobile) */}
         <button
           onClick={onOpenNotifications}
-          className="md:hidden p-2 rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 border border-zinc-800 relative transition-colors"
+          className="p-2 rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 border border-zinc-800 relative transition-colors cursor-pointer"
           aria-label="Notifications"
+          title="Notifications Center"
         >
           <Bell className="w-4 h-4" />
           {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500" />
+            <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[9px] font-bold font-mono">
+              {unreadCount}
+            </span>
           )}
         </button>
 
